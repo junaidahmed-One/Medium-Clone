@@ -10,18 +10,75 @@ const userRoutes = new Hono<{
 	};
 }>();
 
-userRoutes.post("/signup", (c) => {
+userRoutes.post("/signup", async (c) => {
 	const body = c.req.json();
 
 	const prisma = new PrismaClient({
 		datasourceUrl: c.env.DATABASE_URL,
 	}).$extends(withAccelerate());
 
-	return c.text("Hello Hono!");
+	try {
+		const user = await prisma.user.create({
+			data: {
+				email: body.username,
+				password: body.password,
+				name: body.name,
+			},
+		});
+
+		const jwt = await sign(
+			{
+				id: user.id,
+			},
+			c.env.JWT_SECRET
+		);
+
+		return Response.json({
+			token: jwt,
+		});
+	} catch (error) {
+		console.log(error);
+		return Response.json({
+			message: "Error while signing up, Please signup again",
+		});
+	}
 });
 
-userRoutes.post("/signin", (c) => {
-	return c.text("Hello Hono!");
+userRoutes.post("/signin", async (c) => {
+	const body = c.req.json();
+
+	const prisma = new PrismaClient({
+		datasourceUrl: c.env.DATABASE_URL,
+	}).$extends(withAccelerate());
+
+	try {
+		const user = await prisma.user.findUnique({
+			where: {
+				email: body.username,
+			},
+		});
+		if (user) {
+			const jwt = await sign(
+				{
+					id: user.id,
+				},
+				c.env.JWT_SECRET
+			);
+
+			return Response.json({
+				token: jwt,
+			});
+		} else {
+			return Response.json({
+				message: "Couldn't find this user, Please signup",
+			});
+		}
+	} catch (error) {
+		console.log(error);
+		return Response.json({
+			message: "error while signing up",
+		});
+	}
 });
 
 export default userRoutes;

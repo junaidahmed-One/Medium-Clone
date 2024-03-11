@@ -11,7 +11,8 @@ const userRoutes = new Hono<{
 }>();
 
 userRoutes.post("/signup", async (c) => {
-	const body = c.req.json();
+	const body = await c.req.json();
+	//console.log(body);
 
 	const prisma = new PrismaClient({
 		datasourceUrl: c.env.DATABASE_URL,
@@ -20,7 +21,7 @@ userRoutes.post("/signup", async (c) => {
 	try {
 		const user = await prisma.user.create({
 			data: {
-				email: body.username,
+				email: body.email,
 				password: body.password,
 				name: body.name,
 			},
@@ -45,7 +46,7 @@ userRoutes.post("/signup", async (c) => {
 });
 
 userRoutes.post("/signin", async (c) => {
-	const body = c.req.json();
+	const body = await c.req.json();
 
 	const prisma = new PrismaClient({
 		datasourceUrl: c.env.DATABASE_URL,
@@ -55,6 +56,7 @@ userRoutes.post("/signin", async (c) => {
 		const user = await prisma.user.findUnique({
 			where: {
 				email: body.username,
+				password: body.password,
 			},
 		});
 		if (user) {
